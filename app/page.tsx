@@ -1,6 +1,7 @@
 "use client";
 
 import { AppProvider, useApp } from "@/lib/store";
+import ScreenWrapper from "@/components/ScreenWrapper";
 import LandingScreen from "@/components/screens/LandingScreen";
 import CaptureScreen from "@/components/screens/CaptureScreen";
 import AnalyzingScreen from "@/components/screens/AnalyzingScreen";
@@ -11,15 +12,20 @@ import BookingScreen from "@/components/screens/BookingScreen";
 function ScreenRouter() {
   const { state } = useApp();
 
-  switch (state.screen) {
-    case "landing":   return <LandingScreen />;
-    case "capture":   return <CaptureScreen />;
-    case "analyzing": return <AnalyzingScreen />;
-    case "gate":      return <GateScreen />;
-    case "results":   return <ResultsScreen />;
-    case "booking":   return <BookingScreen />;
-    default:          return <LandingScreen />;
-  }
+  const screens = {
+    landing:   <LandingScreen />,
+    capture:   <CaptureScreen />,
+    analyzing: <AnalyzingScreen />,
+    gate:      <GateScreen />,
+    results:   <ResultsScreen />,
+    booking:   <BookingScreen />,
+  };
+
+  return (
+    <ScreenWrapper screenKey={state.screen}>
+      {screens[state.screen] ?? <LandingScreen />}
+    </ScreenWrapper>
+  );
 }
 
 export default function Home() {
