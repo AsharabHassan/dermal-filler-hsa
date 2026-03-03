@@ -25,10 +25,10 @@ export default function AnalyzingScreen() {
     }
 
     let unmounted = false;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 90000); // 90s timeout
+    let controller = new AbortController();
+    let timeout = setTimeout(() => controller.abort(), 150000); // 150s timeout
 
-    async function analyze() {
+    async function attemptAnalyze(): Promise<boolean> {
       try {
         const res = await fetch("/api/analyze", {
           method: "POST",
@@ -37,18 +37,32 @@ export default function AnalyzingScreen() {
           signal: controller.signal,
         });
         clearTimeout(timeout);
-        if (unmounted) return;
+        if (unmounted) return true;
         const data = await res.json();
         if (data.result) {
           dispatch({ type: "SET_ANALYSIS", result: data.result });
           dispatch({ type: "SET_SCREEN", screen: "gate" });
-        } else {
-          dispatch({ type: "SET_SCREEN", screen: "capture" });
+          return true;
         }
+        return false;
       } catch {
         clearTimeout(timeout);
-        if (unmounted) return; // aborted by cleanup (StrictMode) — ignore
-        dispatch({ type: "SET_SCREEN", screen: "capture" });
+        return false;
+      }
+    }
+
+    async function analyze() {
+      const success = await attemptAnalyze();
+      if (unmounted) return;
+      if (!success) {
+        // Retry once with a fresh controller and 150s timeout
+        controller = new AbortController();
+        timeout = setTimeout(() => controller.abort(), 150000);
+        const retrySuccess = await attemptAnalyze();
+        if (unmounted) return;
+        if (!retrySuccess) {
+          dispatch({ type: "SET_SCREEN", screen: "capture" });
+        }
       }
     }
 
